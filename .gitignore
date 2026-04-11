@@ -1,0 +1,13 @@
+# Виртуальное окружение
+venv/
+env/
+.venv/
+
+# Python bytecode
+__pycache__/
+api_client/__pycache__
+tests/__pycache__
+.pytest_cache
+*.py[cod]
+*$py.class
+*.so
