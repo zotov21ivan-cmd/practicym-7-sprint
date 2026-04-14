@@ -2,6 +2,8 @@ import pytest
 import sys
 import os
 import allure
+import string
+import random
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from api_client.scooters_api import ScootersApiClient
@@ -143,5 +145,30 @@ class TestCourierAuth:
             allure.attach(
                 body=response.text,
                 name="Полный ответ API (ошибка 400 — отсутствует логин)",
+                attachment_type=allure.attachment_type.JSON
+            )
+    @allure.feature("Авторизация курьера")
+    @allure.story("Обработка ошибок валидации")
+    @allure.title("Тест авторизации с несуществующим логином/паролем (ошибка 404)")
+    def test_login_with_non_existent_data_error(self, api_client):
+        # Генерируем данные, которых точно нет в базе
+        login = self.generate_random_string (random.randint(2, 10), string.ascii_letters)
+        password = self.generate_random_string (4, string.digits)
+
+        with allure.step(f"Попытка авторизации с несуществующими данными: {login}/{password}"):
+            response = api_client.login_courier(login, password)
+
+        with allure.step("Проверка статуса ответа — ожидается 404 (Not Found)"):
+            assert response.status_code == 404, f"Ожидался 404, пришел {response.status_code}"
+
+        with allure.step("Проверка сообщения об ошибке"):
+            response_data = response.json()
+            assert response_data.get("message") == "Учетная запись не найдена", \
+                f"Неверное сообщение об ошибке: {response_data.get('message')}"
+
+        with allure.step("Логирование ответа"):
+            allure.attach(
+                body=response.text,
+                name="Ответ API при 404",
                 attachment_type=allure.attachment_type.JSON
             )

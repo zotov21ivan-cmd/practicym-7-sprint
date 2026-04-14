@@ -4,61 +4,42 @@ import string
 import random
 import sys
 import os
-
+from utils import generate_random_string
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 class TestCreateCourierAPI:
-
-    def generate_random_string(self, length: int, charset: str = string.ascii_letters) -> str:
-        return ''.join(random.choices(charset, k=length))
 
     @allure.feature("Создание курьера")
     @allure.story("Успешное создание курьера")
     @allure.title("Тест успешного создания курьера с валидными данными")
     def test_create_courier_success(self, api_client):
         # Генерация данных
+        login = self.generate_random_string (random.randint(2, 10), string.ascii_letters),
+        password = self.generate_random_string (4, string.digits)
+        first_name = self.generate_random_string (random.randint(2, 10), string.ascii_letters)
+        
         courier_data = {
-            "login": self.generate_random_string(random.randint(2, 10), string.ascii_letters),
-            "password": self.generate_random_string(4, string.digits),
-            "firstName": self.generate_random_string(random.randint(2, 10), string.ascii_letters)
+            "login": login,
+            "password": password,
+            "firstName": first_name
         }
+        # оздание курьера (основная проверка)
+        with allure.step("Отправка запроса на создание курьера"):
+            response = api_client.create_courier(courier_data)
+            
+        with allure.step("Проверка статус-кода и тела ответа"):
+            assert response.status_code == 201, f"Ожидался код 201, получили {response.status_code}"
+            assert response.json() == {"ok": True}, "Тело ответа не соответствует ожидаемому {'ok': True}"
 
-        # Регистрация курьера
-        with allure.step("Регистрация нового курьера"):
-            create_response = api_client.create_courier(courier_data)
-            assert create_response.status_code == 201
-            assert create_response.json() == {"ok": True}
+        # Логин для подтверждения создания и получения ID для очистки
+        with allure.step("Авторизация созданным курьером для получения ID"):
+            login_response = api_client.login_courier(login, password)
+            courier_id = login_response.json().get("id")
+            assert courier_id is not None, "Курьер не создался (ID не получен при логине)"
 
-        # Авторизация и получение ID
-        with allure.step("Авторизация курьера и получение ID"):
-            login_response = api_client.login_courier(
-                courier_data["login"],
-                courier_data["password"]
-            )
-            courier_id = login_response.json()["id"]
-
-        # Сохраняем все данные для теста
-        courier_info = {
-            **courier_data,
-            "id": courier_id
-        }
-
-        # Проверка данных 
-        with allure.step("Проверка наличия ID курьера"):
-            assert courier_info["id"] is not None
-            assert isinstance(courier_info["id"], int)
-
-        with allure.step("Проверка валидности созданных данных"):
-            assert len(courier_info["login"]) >= 2 and len(courier_info["login"]) <= 10
-            assert courier_info["login"].isalpha()
-            assert len(courier_info["password"]) == 4
-            assert courier_info["password"].isdigit()
-            assert len(courier_info["firstName"]) >= 2 and len(courier_info["firstName"]) <= 10
-
-        # Очистка после теста
-        with allure.step("Очистка: удаление курьера после теста"):
+        # Очистка
+        with allure.step("Удаление курьера"):
             api_client.delete_courier(courier_id)
-
     @allure.feature("Создание курьера")
     @allure.story("Обработка дубликатов")
     @allure.title("Тест создания курьера с уже существующим логином (ошибка 409)")
