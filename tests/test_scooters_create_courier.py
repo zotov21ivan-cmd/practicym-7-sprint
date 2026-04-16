@@ -5,6 +5,7 @@ import random
 import sys
 import os
 from utils import generate_random_string
+from generate_data import *
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 class TestCreateCourierAPI:
@@ -14,9 +15,9 @@ class TestCreateCourierAPI:
     @allure.title("Тест успешного создания курьера с валидными данными")
     def test_create_courier_success(self, api_client):
         # Генерация данных
-        login = self.generate_random_string (random.randint(2, 10), string.ascii_letters),
-        password = self.generate_random_string (4, string.digits)
-        first_name = self.generate_random_string (random.randint(2, 10), string.ascii_letters)
+        login = self.generate_random_string (generate_login),
+        password = self.generate_random_string (generate_pas)
+        first_name = self.generate_random_string (generate_first_name)
         
         courier_data = {
             "login": login,
@@ -46,9 +47,9 @@ class TestCreateCourierAPI:
     def test_create_duplicate_courier_error(self, api_client):
         # Генерация данных
         courier_data = {
-            "login": self.generate_random_string(random.randint(2, 10), string.ascii_letters),
-            "password": self.generate_random_string(4, string.digits),
-            "firstName": self.generate_random_string(random.randint(2, 10), string.ascii_letters)
+            "login": self.generate_random_string(generate_login),
+            "password": self.generate_random_string(generate_pas),
+            "firstName": self.generate_random_string(generate_first_name)
         }
 
         with allure.step("Первое создание курьера (успешно)"):
@@ -104,7 +105,7 @@ class TestCreateCourierAPI:
     @allure.title("Тест создания курьера без пароля (ошибка 400)")
     def test_create_missing_password_error(self, api_client):
         invalid_courier_data = {
-            "login": self.generate_random_string(random.randint(2, 10), string.ascii_letters),
+            "login": self.generate_random_string(generate_login),
             "password": "",
             "firstName": "Test"
         }
